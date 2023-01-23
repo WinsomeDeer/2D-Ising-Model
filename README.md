@@ -1,2 +1,2 @@
-# Percolation-Theory
-Cython implementation of percolation across different lattices in 2D.
+# Ising model
+Cython implementation of the Ising model in 2D.
