@@ -85,14 +85,36 @@ class Ising_Model:
         print(end - start)
         img.set_data(self.lattice)
         return img
+    # Function to vary temp.
+    def itr_temp(self):
+        beta = np.linspace(1, 7, 20)
+        for inv in beta:
+            self.lattice = self.build_lattice()
+            self.beta = 1/inv
+            for i in range(10):
+                for j in range(self.m * self.n):
+                    a = np.random.randint(0, self.m)
+                    b = np.random.randint(0, self.n)
+                    nn = self.nn_energy(a, b)
+                    Q = 2*nn*self.lattice[a, b]
+                    if Q < 0:
+                        self.lattice[a, b] *= -1
+                    elif np.random.rand() < np.exp(-Q*self.beta):
+                        self.lattice[a, b] *= -1
+            self.mag_sus.append(self.magnetic_susceptibility())
+
 # Main function.
 def main():
-    a = Ising_Model(1.0, 200, 200)
+    a = Ising_Model(1, 200, 200)
     fig, ax = plt.subplots()
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     img = ax.imshow(a.build_lattice(), interpolation = 'nearest')
     ani = animation.FuncAnimation(fig, a.itr, fargs = (img,), frames = 10, interval = 50, save_count = 50)
+    plt.show()
+    a.itr_temp()
+    temp = np.linspace(1, 7, 20)
+    plt.plot(temp, a.mag_sus, 'ro')
     plt.show()
 if __name__ == '__main__':
     main()
