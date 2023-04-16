@@ -9,6 +9,7 @@ from libc.time cimport time
 import time as T
 srand(time(NULL))
 # Boltzmans constant (k) and electron magnetic moment (mu).
+# CRITCAL BETA = 0.4406868
 k = 1.38 * 10 ** -27
 mu = -9.2847647043 * 10 ** -24
 # Class for Ising model.
@@ -22,7 +23,7 @@ class Ising_Model:
     # Function to build a lattice of random values.
     def build_lattice(self):
         cdef int i, j;
-        cdef np.ndarray lattice = np.zeros(shape = (self.m, self.n))
+        cdef np.ndarray lattice = np.zeros(shape = (self.m, self.n), dtype = np.intc)
         for i in range(self.m):
             for j in range(self.n):
                 if rand() < 0.5 * RAND_MAX:
@@ -70,51 +71,30 @@ class Ising_Model:
     # function to update the lattice.
     def itr(self, int frame_num, img):
         cdef int i, j, a, b, nn, Q
+        cdef int[:,::1] lattice_view = self.lattice
         start = T.time()
         for i in range(self.m):
             for j in range(self.n):
                 a = rand() % self.m
                 b = rand() % self.n
                 nn = self.nn_energy(a, b)
-                Q = 2*nn*self.lattice[a, b]
+                Q = 2*nn*lattice_view[a, b]
                 if Q < 0:
-                    self.lattice[a, b] *= -1
+                    lattice_view[a, b] *= -1
                 elif rand() < exp(-Q*self.beta) * RAND_MAX:
-                    self.lattice[a, b] *= -1
+                    lattice_view[a, b] *= -1
         end = T.time()
         print(end - start)
-        img.set_data(self.lattice)
+        img.set_data(lattice_view)
         return img
-    # Function to vary temp.
-    def itr_temp(self):
-        beta = np.linspace(1, 7, 20)
-        for inv in beta:
-            self.lattice = self.build_lattice()
-            self.beta = 1/inv
-            for i in range(10):
-                for j in range(self.m * self.n):
-                    a = np.random.randint(0, self.m)
-                    b = np.random.randint(0, self.n)
-                    nn = self.nn_energy(a, b)
-                    Q = 2*nn*self.lattice[a, b]
-                    if Q < 0:
-                        self.lattice[a, b] *= -1
-                    elif np.random.rand() < np.exp(-Q*self.beta):
-                        self.lattice[a, b] *= -1
-            self.mag_sus.append(self.magnetic_susceptibility())
-
 # Main function.
 def main():
-    a = Ising_Model(1, 200, 200)
+    a = Ising_Model(0.4406868, 200, 200)
     fig, ax = plt.subplots()
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     img = ax.imshow(a.build_lattice(), interpolation = 'nearest')
     ani = animation.FuncAnimation(fig, a.itr, fargs = (img,), frames = 10, interval = 50, save_count = 50)
-    plt.show()
-    a.itr_temp()
-    temp = np.linspace(1, 7, 20)
-    plt.plot(temp, a.mag_sus, 'ro')
     plt.show()
 if __name__ == '__main__':
     main()
